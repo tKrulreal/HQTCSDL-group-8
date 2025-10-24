@@ -116,10 +116,10 @@ INSERT INTO PHONG_THIETBI (MaPhong, MaTB, SoLuong) VALUES
 ('P010', 'TB08', 1);
 
 -- 11. PHIEUDANGKY
-INSERT INTO PHIEUDANGKY (MaPDK, NgayDangKy, MaNV, MaDonVi, GhiChu) VALUES
-('PDK001', GETDATE(), 'NV002', 'DV02', N'Đăng ký họp nội bộ'),
-('PDK002', '2025-10-15', 'NV001', 'DV01', N'Đăng ký đào tạo phần mềm mới'),
-('PDK003', '2025-10-18', 'NV002', 'DV02', N'Họp Ban Giám Đốc');
+INSERT INTO PHIEUDANGKY (MaPDK, NgayDangKy, MaNV, GhiChu) VALUES
+('PDK001', GETDATE(), 'NV002', N'Đăng ký họp nội bộ'),
+('PDK002', '2025-10-15', 'NV001', N'Đăng ký đào tạo phần mềm mới'),
+('PDK003', '2025-10-18', 'NV002', N'Họp Ban Giám Đốc');
 
 -- 12. CHITIET_PHIEUDANGKY
 INSERT INTO CHITIET_PHIEUDANGKY (MaPDK, MaPhong, NgaySuDung, GioBatDau, GioKetThuc, NguoiSuDung, MucDich) VALUES
