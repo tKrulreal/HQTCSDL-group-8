@@ -43,10 +43,16 @@ CREATE OR ALTER TRIGGER TRG_CapNhatTrangThaiPhong_SuDung
     AFTER INSERT
     AS
 BEGIN
-    UPDATE PHONG
-    SET MaTrangThai = 'TT003'  -- “Đang có người sử dụng”
+    SET NOCOUNT ON;
+
+    UPDATE P
+    SET MaTrangThai = 'TT003'  -- \`Đang có người sử dụng\`
     FROM PHONG P, INSERTED I
-    WHERE P.MaPhong = I.MaPhong;
+    WHERE P.MaPhong = I.MaPhong
+      AND GETDATE() BETWEEN
+        CONVERT(datetime, CONVERT(varchar(10), I.NgaySuDung, 23) + ' ' + CONVERT(varchar(8), I.GioBatDau, 108))
+        AND
+        CONVERT(datetime, CONVERT(varchar(10), I.NgaySuDung, 23) + ' ' + CONVERT(varchar(8), I.GioKetThuc, 108));
 END;
 GO
 
@@ -81,30 +87,29 @@ BEGIN
     WHERE MaPhong IN (SELECT MaPhong FROM DELETED);
 END;
 GO
-
 CREATE OR ALTER TRIGGER TRG_CapNhatTrangThaiPhong_BaoTri
     ON LICH_BAO_TRI
     AFTER INSERT, UPDATE, DELETE
     AS
 BEGIN
     SET NOCOUNT ON;
-
-    -- Trường hợp thêm hoặc cập nhật lịch bảo trì (đang có bảo trì)
     UPDATE PHONG
-    SET MaTrangThai = 'TT002'  -- “Đang bảo trì”
-    FROM PHONG P, INSERTED I
-    WHERE P.MaPhong = I.MaPhong
-      AND EXISTS (SELECT 1 FROM INSERTED);
+    SET MaTrangThai = 'TT002'  -- "Đang bảo trì"
+    WHERE MaPhong IN (
+        SELECT MaPhong
+        FROM INSERTED
+        WHERE NgayBatDau <= GETDATE()
+          AND NgayKetThuc >= GETDATE()
+    );
 
-    -- Trường hợp xóa lịch bảo trì hoặc lịch đã kết thúc => trả phòng về trạng thái sẵn sàng
     UPDATE PHONG
-    SET MaTrangThai = 'TT001'  -- “Sẵn sàng sử dụng”
-    FROM PHONG P
-    WHERE P.MaPhong IN (
+    SET MaTrangThai = 'TT001'  -- "Sẵn sàng sử dụng"
+    WHERE MaPhong IN (
         SELECT D.MaPhong FROM DELETED D
         WHERE NOT EXISTS (
             SELECT 1 FROM LICH_BAO_TRI B
             WHERE B.MaPhong = D.MaPhong
+              AND B.NgayBatDau <= GETDATE()
               AND B.NgayKetThuc >= GETDATE()
         )
     );
