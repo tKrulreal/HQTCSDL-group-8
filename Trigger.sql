@@ -3,40 +3,30 @@ GO
 
 CREATE OR ALTER TRIGGER TRG_KiemTraTrungLichPhong
     ON CHITIET_PHIEUDANGKY
-    INSTEAD OF INSERT
+    AFTER INSERT, UPDATE
     AS
 BEGIN
     SET NOCOUNT ON;
 
     DECLARE @Conflict INT;
 
-    -- Kiểm tra trùng giờ với các bản ghi đã có
+    -- Kiểm tra trùng giờ với các bản ghi khác
     SELECT @Conflict = COUNT(*)
-    FROM INSERTED I
-    WHERE EXISTS (
-        SELECT 1
-        FROM CHITIET_PHIEUDANGKY C
-        WHERE C.MaPhong = I.MaPhong
-          AND C.NgaySuDung = I.NgaySuDung
-          AND (I.GioBatDau < C.GioKetThuc AND I.GioKetThuc > C.GioBatDau)
-    );
+    FROM CHITIET_PHIEUDANGKY C, INSERTED I
+    WHERE C.MaPhong = I.MaPhong
+      AND C.NgaySuDung = I.NgaySuDung
+      AND (C.GioBatDau < I.GioKetThuc AND C.GioKetThuc > I.GioBatDau)
+      -- Loại trừ chính bản ghi đang được UPDATE
+      AND NOT (C.MaPDK = I.MaPDK AND C.MaPhong = I.MaPhong AND C.NgaySuDung = I.NgaySuDung);
 
-    IF @Conflict > 0
+    IF (@Conflict > 0)
         BEGIN
             RAISERROR (N'❌ Phòng này đã được đăng ký trùng giờ. Vui lòng chọn khung giờ khác.', 16, 1);
             ROLLBACK TRANSACTION;
             RETURN;
         END
-    ELSE
-        BEGIN
-            -- Nếu không trùng thì cho phép thêm dữ liệu
-            INSERT INTO CHITIET_PHIEUDANGKY (MaPDK, MaPhong, NgaySuDung, GioBatDau, GioKetThuc, NguoiSuDung, MucDich)
-            SELECT MaPDK, MaPhong, NgaySuDung, GioBatDau, GioKetThuc, NguoiSuDung, MucDich
-            FROM INSERTED;
-        END
 END;
 GO
-
 
 CREATE OR ALTER TRIGGER TRG_CapNhatTrangThaiPhong_SuDung
     ON CHITIET_PHIEUDANGKY
